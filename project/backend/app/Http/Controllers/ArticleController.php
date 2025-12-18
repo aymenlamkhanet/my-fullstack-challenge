@@ -13,24 +13,23 @@ class ArticleController extends Controller
      */
     public function index(Request $request)
     {
-        $articles = Article::all();
-
-        $articles = $articles->map(function ($article) use ($request) {
-            if ($request->has('performance_test')) {
-                usleep(30000); // 30ms par article pour simuler le coût du N+1
-            }
-
-            return [
-                'id' => $article->id,
-                'title' => $article->title,
-                'content' => substr($article->content, 0, 200) . '...',
-                'author' => $article->author->name,
-                'comments_count' => $article->comments->count(),
-                'published_at' => $article->published_at,
-                'created_at' => $article->created_at,
-            ];
+        $articles = \Cache::remember('articles_api', 60, function () use ($request) {
+            $articles = Article::with(['author', 'comments'])->get();
+            return $articles->map(function ($article) use ($request) {
+                if ($request->has('performance_test')) {
+                    usleep(30000); // 30ms par article pour simuler le coût du N+1
+                }
+                return [
+                    'id' => $article->id,
+                    'title' => $article->title,
+                    'content' => substr($article->content, 0, 200) . '...',
+                    'author' => $article->author->name,
+                    'comments_count' => $article->comments->count(),
+                    'published_at' => $article->published_at,
+                    'created_at' => $article->created_at,
+                ];
+            });
         });
-
         return response()->json($articles);
     }
 
@@ -67,23 +66,25 @@ class ArticleController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('q');
-
         if (!$query) {
             return response()->json([]);
         }
 
-        $articles = DB::select(
-            "SELECT * FROM articles WHERE title LIKE '%" . $query . "%'"
-        );
 
-        $results = array_map(function ($article) {
+        // Recherche sécurisée contre l'injection SQL, insensible aux accents et à la casse
+        $articles = \DB::table('articles')
+            ->where('title', 'LIKE', "%$query%")
+            ->collation('utf8mb4_unicode_ci')
+            ->get();
+
+        $results = $articles->map(function ($article) {
             return [
                 'id' => $article->id,
                 'title' => $article->title,
                 'content' => substr($article->content, 0, 200),
                 'published_at' => $article->published_at,
             ];
-        }, $articles);
+        });
 
         return response()->json($results);
     }

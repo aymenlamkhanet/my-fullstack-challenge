@@ -49,7 +49,7 @@ class CommentController extends Controller
         $comment->delete();
 
         $remainingComments = Comment::where('article_id', $articleId)->get();
-        $firstComment = $remainingComments[0];
+        $firstComment = $remainingComments->first(); // renvoie null si vide
 
         return response()->json([
             'message' => 'Comment deleted successfully',

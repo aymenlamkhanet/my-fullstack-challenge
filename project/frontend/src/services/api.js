@@ -46,3 +46,33 @@ export const uploadImage = (formData) => {
 
 export default api;
 
+
+
+
+<process name="TraitementCommande">
+  <sequence>
+    
+    <receive operation="recevoirCommande"/>
+    
+    <invoke service="ServiceClient"/>
+    <if condition="clientValide">
+      
+      <invoke service="ServiceStock"/>
+      <if condition="stockDisponible">
+        
+        <invoke service="ServicePaiement"/>
+        <if condition="paiementOK">
+          
+          <invoke service="ServiceCommande"/>
+          <invoke service="ServiceLivraison"/>
+          <invoke service="ServiceEmail"/>
+          
+          <reply message="Commande validée"/>
+        </if>
+      </if>
+    </if>
+    
+  </sequence>
+</process>
+
+

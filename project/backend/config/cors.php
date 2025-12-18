@@ -19,7 +19,8 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Autorise uniquement localhost et domaine de prod (à adapter si besoin)
+    'allowed_origins' => ['http://localhost:3000', 'http://localhost', 'https://votre-domaine-prod.fr'],
 
     'allowed_origins_patterns' => [],
 
